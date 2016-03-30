@@ -1,4 +1,4 @@
-// BlodbankiSim.cpp : Defines the entry point for the console application.
+// BlodbankiSim.c : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
