@@ -1,0 +1,1 @@
+This is a simulation of a blood bank inventory.
