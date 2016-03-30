@@ -3,8 +3,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-
 #include "BlodbankiSim.h"
+
 
 void simulate()
 {
@@ -83,4 +83,5 @@ void report()
 	//fprintf(outfile, "..."),
 	printf("End of blood bank simulation.\n");
 	printf("Results have been written into \"bloodbank.out\".\n");
+
 }

@@ -153,11 +153,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BlodbankiSim.c" />
+    <ClCompile Include="Distributions.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="simlib.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BlodbankiSim.h" />
+    <ClInclude Include="Distributions.h" />
     <ClInclude Include="simlib.h" />
     <ClInclude Include="simlibdefs.h" />
   </ItemGroup>
