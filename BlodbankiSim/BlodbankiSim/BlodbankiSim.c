@@ -6,6 +6,14 @@
 #include "BlodbankiSim.h"
 #include "Distributions.h"
 
+int N[MAXITEM][MAXBLOODGROUP]; /* Total number of batches of item “i” of blood group “g” */
+float Stock[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* Stock level of the nth batch of item “i” of blood group “g” */
+float Texpiry[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* The time of expiry of the nth batch of item “i” of blood group “g" */
+float Tcamp; /* The time of next blood donation camp */
+float perc_fail, Tc, Sc, SBB, Dig;
+float Perc[MAXBLOODGROUP] = { 21.19, 29.24, 37.09, 6.44 };; /* A+ B+ O+ AB+ and 6.04% are of negative type */
+FILE  *infile, *outfile;
+
 void simulate()
 {
 	printf("Starting blood bank inventory management simulation.\n");

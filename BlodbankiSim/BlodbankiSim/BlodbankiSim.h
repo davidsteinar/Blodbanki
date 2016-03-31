@@ -18,13 +18,14 @@
 #define MAXNBATCH 1000
 #define MAXITEM  1000
 #define MAXBLOODGROUP 4 /* only the postive blood groups are considered for the simlation since negative ones are rare */
-int N[MAXITEM][MAXBLOODGROUP]; /* Total number of batches of item “i” of blood group “g” */
-float Stock[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* Stock level of the nth batch of item “i” of blood group “g” */
-float Texpiry[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* The time of expiry of the nth batch of item “i” of blood group “g" */
-float Tcamp; /* The time of next blood donation camp */
-float perc_fail, Tc, Sc, SBB, Dig;
-static float Perc[MAXBLOODGROUP] = { 21.19, 29.24, 37.09, 6.44 }; /* A+ B+ O+ AB+ and 6.04% are of negative type */
-FILE  *infile, *outfile;
+
+extern int N[MAXITEM][MAXBLOODGROUP]; /* Total number of batches of item “i” of blood group “g” */
+extern float Stock[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* Stock level of the nth batch of item “i” of blood group “g” */
+extern float Texpiry[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* The time of expiry of the nth batch of item “i” of blood group “g" */
+extern float Tcamp; /* The time of next blood donation camp */
+extern float perc_fail, Tc, Sc, SBB, Dig;
+extern float Perc[MAXBLOODGROUP]; /* A+ B+ O+ AB+ and 6.04% are of negative type */
+extern FILE  *infile, *outfile;
 
 /* Bloodbank simulation related functions declared */
 
