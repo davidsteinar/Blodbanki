@@ -213,3 +213,4 @@ ModelManifest.xml
 
 #Extra ignores..
 *.out
+*.VC.opendb
