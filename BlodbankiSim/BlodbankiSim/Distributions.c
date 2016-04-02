@@ -1,6 +1,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "simlib.h"
 #include "Distributions.h"
@@ -10,7 +11,7 @@ double normalDistribution(double mu, double sigma)
 	double U1, U2, W, mult;
 	static double X1, X2;
 	static int call = 0;
-	
+
 	if (call == 1)
 	{
 		call = !call;
