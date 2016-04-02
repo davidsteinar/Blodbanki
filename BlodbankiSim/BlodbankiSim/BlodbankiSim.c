@@ -18,6 +18,7 @@ float Dig;  //Daily demand for the item
 float waste[MAXITEM][MAXBLOODGROUP];
 float expireTimes[MAXITEM] = { 30.0, 365.0, 5.0, 30.0 }; //lifetime for { wholeblood, plasma, plateletes, RBC }
 float Perc[MAXBLOODGROUP] = { 0.2119, 0.2924, 0.3709, 0.0644 }; /* A+ B+ O+ AB+ and 6.04% are of negative type */
+char *bloodGroupTypes[MAXBLOODGROUP] = { "A+", "B+", "O+", "AB+" };
 FILE  *infile, *outfile;
 
 void simulate()
@@ -41,8 +42,8 @@ void simulate()
 	event_schedule(sim_time + 1, EVENT_BLOOD_DEMAND);
 
 
-
-	event_schedule(40, EVENT_END_SIMULATION);
+	int end_sim_time = 100; // simulation end time in days
+	event_schedule(end_sim_time, EVENT_END_SIMULATION);
 
 	eventLoop();
 	report();
@@ -105,20 +106,16 @@ void bloodArrival()
 	float size = 2.7425933;
 	float mu = 83.5663430;  /* these are the parameters found in the R script for the negative binomial distribution */
 	int collected = negativebinomrnd(size, mu, STREAM_BLOOD_ARRIVAL);
-	int i;
-    /*
-	for (i = 0; i < 300; i++)
-		printf("%d\n,", negativebinomrnd(size, mu, STREAM_BLOOD_ARRIVAL));
-    */
+	int g;
+	int wholeBloodType = 0;
     float collectedTypes[MAXBLOODGROUP];
     collected *= 1-perc_fail;
-    for(i = 0; i < MAXBLOODGROUP; i++)
+	//Distribute to blood group types
+    for(g = 0; g < MAXBLOODGROUP; g++)
     {
-        collectedTypes[i] = collected * Perc[i];
+        collectedTypes[g] = collected * Perc[g];
     }
-    int wholeBloodType = 0;
-
-    int g;
+	//Update stock
     for(g = 0; g < MAXBLOODGROUP; g++)
     {
         int n = N[wholeBloodType][g];
@@ -129,32 +126,6 @@ void bloodArrival()
     {
         N[wholeBloodType][g]++;
     }
-    //Update stock levels
-
-    /*
-    if(sim_time >= 50)
-    {
-        float totalUnits[MAXITEM][MAXBLOODGROUP];
-        for(i = 0; i < MAXBLOODGROUP; i++)
-        {
-
-            int n = N[wholeBloodType][i];
-            int j;
-            for(j = 0; j < n; j++)
-            {
-                totalUnits[wholeBloodType][i] += Stock[j][wholeBloodType][i];
-            }
-            printf("Total units of wholeblood of blood group %d = %f\n", i, totalUnits[wholeBloodType][i]);
-        }
-        exit(1);
-    } */
-
-	/*
-	1) Update the stock levels of the items of various
-	blood groups based on quantity collected ( based on
-	collection policy), % failed tests, % componentized
-	and % of various blood groups.
-    */
 
     for(g = 0; g < MAXBLOODGROUP; g++)
     {
@@ -164,13 +135,6 @@ void bloodArrival()
         //schedule expiry events for all items i of blood group g
         event_schedule(sim_time + expireTimes[wholeBloodType], EVENT_BLOOD_EXPIRATION);
     }
-
-    /*
-	2) Compute the day of expiry of the new batch of
-	the various items.
-	3) Generate the day of the next CAMP.
-	*/
-
 
 	/* Schedule next camp 3) */
 
@@ -199,8 +163,8 @@ void bloodExpiration()
 
     int n;
     //O(N) operation :(
-    //Move all badges in Stock 1 backwards
-    printf("Threw away %f units of whole blood of blood group %d\n", Stock[0][item][bloodGroup], (int) bloodGroup);//debug print
+    //Move all badges in Stocks backwards by 1
+	DEBUGPRINTF("Threw away expired %.4f units of whole blood of blood group %s\n", Stock[0][item][bloodGroup], bloodGroupTypes[bloodGroup])
     waste[item][bloodGroup] += Stock[0][item][bloodGroup];
     for (n = 1; n < N[item][bloodGroup]-2; n++)
     {
@@ -208,7 +172,6 @@ void bloodExpiration()
 
     }
     N[item][bloodGroup] --; // Decrement total number of badges for item i and bloodgroup g
-
 }
 
 void bloodDemand()
@@ -224,17 +187,32 @@ void bloodDemand()
 
 void report()
 {
+	printf("\n");
+	printf("End of blood bank simulation.\n");
+	int wholeBloodType = 0;
+	int i;
+	float totalUnits[MAXITEM][MAXBLOODGROUP];
+	memset(totalUnits, 0.0f, sizeof(totalUnits)); //initialize with 0.0f
+	for(i = 0; i < MAXBLOODGROUP; i++)
+	{
+		int n = N[wholeBloodType][i];
+		int j;
+		for(j = 0; j < n-1; j++)
+		{
+			totalUnits[wholeBloodType][i] += Stock[j][wholeBloodType][i];
+		}
+		DEBUGPRINTF("Total %.4f units of wholeblood of blood group %s.\n", totalUnits[wholeBloodType][i], bloodGroupTypes[i])
+	
+	} 
     printf("\n");
-    int wholeBloodType = 0;
-    int i;
+   
     for(i = 0; i < MAXBLOODGROUP; i++)
     {
 
-        printf("Total wastage of wholeblood of group %d = %d\n", i, waste[wholeBloodType][i]);
+        DEBUGPRINTF("Total wasted %.4f of wholeblood of group %s.\n", waste[wholeBloodType][i], bloodGroupTypes[i])
     }
 	//report information to outfile
 	//fprintf(outfile, "..."),
-	printf("End of blood bank simulation.\n");
 	printf("Results have been written into \"bloodbank.out\".\n");
 
 }

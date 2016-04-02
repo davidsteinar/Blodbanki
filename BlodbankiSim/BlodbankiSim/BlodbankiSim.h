@@ -3,6 +3,8 @@
 
 //Define constants
 
+#define ENABLE_DEBUGPRINTF
+
 #define EVENT_BLOOD_ARRIVAL     1  /* Event type for arrival of blood */
 #define EVENT_BLOOD_DONATION	2  /* Event type for blood departure (when blood is used) */
 #define EVENT_BLOOD_DEMAND		3  /* Event type for blood demand */
@@ -22,6 +24,11 @@
 #define ITEM    3  //til að setja í transfer fylki fyrir Expire event
 #define BLOODGROUP  4
 
+#ifdef ENABLE_DEBUGPRINTF
+#define DEBUGPRINTF(msg, ...) { printf("At sim_time = %.1f: ", sim_time); printf(msg,__VA_ARGS__); }
+#else
+#define DEBUGPRINTF(msg) 
+#endif
 
 extern int N[MAXITEM][MAXBLOODGROUP]; /* Total number of batches of item “i” of blood group “g” */
 extern float Stock[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* Stock level of the nth batch of item “i” of blood group “g” */
@@ -30,6 +37,7 @@ extern float waste[MAXITEM][MAXBLOODGROUP];
 extern float Tcamp; /* The time of next blood donation camp */
 extern float perc_fail, Tc, Sc, SBB, Dig;
 extern float Perc[MAXBLOODGROUP]; /* A+ B+ O+ AB+ and 6.04% are of negative type */
+extern char *bloodGroupTypes[MAXBLOODGROUP]; // index to blood types char*
 extern FILE  *infile, *outfile;
 
 /* Bloodbank simulation related functions declared */
