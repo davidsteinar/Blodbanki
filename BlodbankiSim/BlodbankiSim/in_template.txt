@@ -1,0 +1,6 @@
+max_sim_time
+perc_fail
+componentizePolicy
+collectionPolicy
+Perc[A+]		Perc[B+]		Perc[O+]		Perc[AB+]		// % distribution into blood group types
+expiry[WB]		expiry[RBC]		expiry[plateletes]		expiry[plasma] 	//expiry times
