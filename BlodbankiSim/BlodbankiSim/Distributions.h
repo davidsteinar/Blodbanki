@@ -1,8 +1,3 @@
-//Distributions from GNU
-
-extern int poissonRandom(double);
-extern double  normalDistribution(double, double);
-
 // Distributions from Tómas
 
 float discrete_empirical(float *F, int n, int stream);

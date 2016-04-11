@@ -228,20 +228,55 @@ void bloodExpiration()
 
 void bloodDemand()
 {
-	int i, g, n;
+	int i, g; 
 	/*
 	1) Generate the daily demand for the items of various blood groups.
 	//TODO: implement generators for daily demand of items i of blood groups g.
 	*/
 	float bloodDemand[MAXITEM][MAXBLOODGROUP];
 	float demandSum = 0.0f; //not important - just for printing
+
+	//stikar fyrir negative binomial dreifingarnar
+	float sizevigur[8] = { 2.881316 , 5.469497,  2.126104 ,0.9013933, 2.278314, 1.755385 , 1.016910 , 1.5033445 };
+	float muvigur[8]   = { 7.844908 ,4.519023 ,4.279691 , 1.6684022, 3.749920, 3.009935, 2.440104 , 0.6499638 };
+	float result[16];
+
+	//empirískar dreifingar
+	float empFFPo[7] = { 0.533980583, 0.660194175, 0.825242718, 0.86407767, 0.912621359, 0.961165049, 1 };
+	float empFFPb[8] = { 0.640776699, 0.747572816, 0.883495146, 0.912621359, 0.961165049, 0.980582524, 0.990291262,1 };
+	float empFFPa[6] = { 0.699029126, 0.786407767, 0.932038835, 0.970873786, 0.990291262, 1 };
+	float empFFPab[3]= { 0.980582524, 0.990291262, 1 };
+	float empPlatelets[25] = { 0.29787234,0.329787234,0.361702128,0.393617021,0.510638298,0.521276596,0.531914894,
+		0.563829787,0.595744681,0.638297872,0.691489362,0.712765957,0.755319149,0.776595745,0.787234043,0.808510638,
+		0.872340426,0.904255319,0.914893617,0.957446809,0.968085106,0.978723404,0.989361702,1 };
+	
+	//byrja að fylla inn demand í result
+	for (i = 0; i < 8; i++){
+			result[i] = negativebinomrnd(sizevigur[i], muvigur[i], STREAM_BLOOD_DEMAND); //demand sem er nbinom dreift
+		}
+
+	//fylli discrete ffp
+	float FFPo = discrete_empirical(empFFPo, 7, STREAM_BLOOD_DEMAND); result[8] = FFPo; //demand sem er empirical dreift
+	float FFPb = discrete_empirical(empFFPb, 8, STREAM_BLOOD_DEMAND); result[9] = FFPb;
+	float FFPa = discrete_empirical(empFFPa, 6, STREAM_BLOOD_DEMAND); result[10] = FFPa;
+	float FFPab = discrete_empirical(empFFPab, 3, STREAM_BLOOD_DEMAND); result[11] = FFPab;
+
+
+	//fylli discrete platelets
+	result[12] = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND) * 0.2119;
+	result[13] = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND) * 0.2924;
+	result[14] = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND) * 0.3709;
+	result[15] = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND) * 0.0644;
+
+
 	for (i = 0; i < MAXITEM; i++)
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
-			//Placeholder 
-			bloodDemand[i][g] = 18.3f; //generator function for [i][g] comes here instead of this line
+			int teljari = 0;
+			bloodDemand[i][g] = result[teljari]; 
 			demandSum += bloodDemand[i][g];
+			teljari++;
 		}
 	}
 	/*
