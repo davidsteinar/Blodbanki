@@ -263,17 +263,19 @@ void bloodDemand()
 
 
 	//fylli discrete platelets
-	result[12] = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND) * 0.2119;
-	result[13] = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND) * 0.2924;
-	result[14] = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND) * 0.3709;
-	result[15] = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND) * 0.0644;
+	float p = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND);
+	result[12] = p * 0.2119;
+	result[13] = p * 0.2924;
+	result[14] = p * 0.3709;
+	result[15] = p * 0.0644;
 
+	int teljari = 0;
 
 	for (i = 0; i < MAXITEM; i++)
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
-			int teljari = 0;
+			
 			bloodDemand[i][g] = result[teljari]; 
 			demandSum += bloodDemand[i][g];
 			teljari++;
