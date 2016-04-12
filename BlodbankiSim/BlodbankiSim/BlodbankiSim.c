@@ -7,17 +7,14 @@
 #include "Distributions.h"
 
 int N[MAXITEM][MAXBLOODGROUP]; /* Total number of batches of item “i” of blood group “g” */
+int oldestBadge[MAXITEM][MAXBLOODGROUP];
 float Stock[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* Stock level of the nth batch of item “i” of blood group “g” */
-float Texpiry[MAXNBATCH][MAXITEM][MAXBLOODGROUP]; /* The time of expiry of the nth batch of item “i” of blood group “g" */
 float Tcamp; /* The time of next blood donation camp */
 float perc_fail;
 float componentizePolicy; // % of componentized whole blood
-float collectionPolicy; // % of how much of the blood is collected - rest goes to HBB??
+float collectionPolicyLevel; // % of how much of the blood is collected - rest goes to HBB??
+int collectionPolicyType;
 float max_sim_time;
-float Tc; // Time between two succesive camps
-float Sc;  // Donation at a camp (units)
-float SBB; //Daily donation at the blood
-float Dig;  //Daily demand for the item
 float waste[MAXITEM][MAXBLOODGROUP];
 float shortage[MAXITEM][MAXBLOODGROUP];
 float expireTimes[MAXITEM];//lifetime for { wholeblood, plasma, plateletes, RBC }
@@ -64,20 +61,22 @@ void readInput()
 	fscanf(infile, "%f", &max_sim_time);
 	fscanf(infile, "%f", &perc_fail);
 	fscanf(infile, "%f", &componentizePolicy);
-	fscanf(infile, "%f", &collectionPolicy);
+	fscanf(infile, "%d", &collectionPolicyType);
+	fscanf(infile, "%f", &collectionPolicyLevel);
 	for (g = 0; g < MAXBLOODGROUP; g++)
 		fscanf(infile, "%f ", &Perc[g]);
 	for (g = 0; g < MAXITEM; g++)
 		fscanf(infile, "%f ", &expireTimes[g]);
-	
+
 
 	fprintf(outfile, "Input data for the simulation.\n\n");
 
 	//Print input information to output file
 	fprintf(outfile, "Maximum simulation time: %d days.\n", (int)max_sim_time);
-	fprintf(outfile, "Percentage of failed blood collections %d%%.\n", (int)(100*perc_fail));
-	fprintf(outfile, "Componentization policy: %d%%\n", (int)(100*componentizePolicy));
-	fprintf(outfile, "Collection policy: %d%%\n", (int)(100 * collectionPolicy));
+	fprintf(outfile, "Percentage of failed blood collections %d%%.\n", (int)(1+100*perc_fail));
+	fprintf(outfile, "Componentization policy: %d%%\n", (int)(1+100*componentizePolicy));
+	fprintf(outfile, "Collection policy type = %d\n", collectionPolicyType);
+	fprintf(outfile, "Collection policy level = %.1f\n", collectionPolicyLevel);
 	fprintf(outfile, "Percentage composition of blood group\n");
 	for (g = 0; g < MAXBLOODGROUP; g++)
 		fprintf(outfile, "Perc[%s] = %.3f \n", bloodGroupTypes[g], Perc[g]);
@@ -120,14 +119,22 @@ void eventLoop()
 }
 
 //Blood arrival from camp
-void bloodArrival(int totalCollected)
+void bloodArrival(float totalCollected)
 {
+
 	/* the following is the cumulative empirical distribution for days beween camps, data taken from Excel data file (duration between camps) */
 	int g, i;
     float collected[MAXITEM][MAXBLOODGROUP];
-	totalCollected *= collectionPolicy; //collect based on collection policy?
     totalCollected *= 1-perc_fail; //throw away the failed ones
+    //keep collection based on policies
+    if (collectionPolicyType == COLLECTION_POLICY_KEEP_LEVEL && totalCollected >= collectionPolicyLevel)
+    {
+        totalCollected = collectionPolicyLevel;
+    }
 
+
+
+    if (totalCollected <= 0) return;
 	//Distribute to blood group types
 	float portion = totalCollected * (1 - componentizePolicy); //whole blood portion
 	for (i = 0; i < MAXITEM; i++)
@@ -135,21 +142,23 @@ void bloodArrival(int totalCollected)
 		if (i == 1) portion = totalCollected * componentizePolicy; // the componentized portion = (1-whole blood portion)
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
-			collected[i][g] = totalCollected  * portion * Perc[g];
+			collected[i][g] = portion * Perc[g];
 		}
 	}
-	
+
 	//Update stock
 	for (i = 0; i < MAXITEM; ++i)
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
-			int n = N[i][g];
+
+
+			if (oldestBadge[i][g] + N[i][g] >= MAXNBATCH) relocateBadges(i,g);
+            int n = oldestBadge[i][g] + N[i][g];
 			Stock[n][i][g] = collected[i][g];
 		}
 	}
-		
-    //Increment batch size for all items i and blood group g
+     //Increment batch size for all items i and blood group g
 	for (i = 0; i < MAXITEM; ++i)
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
@@ -157,6 +166,7 @@ void bloodArrival(int totalCollected)
 			N[i][g]++;
 		}
 	}
+
 	for (i = 0; i < MAXITEM; ++i)
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
@@ -187,9 +197,9 @@ void bloodCamp()
 
 void bloodDonation()
 {
+    float donationF[11] = {0.459770115, 0.67816092, 0.770114943, 0.862068966, 0.873563218, 0.908045977, 0.965517241, 0.965517241, 0.965517241, 0.977011494, 1.0};
 	//placeholders
-	float collected = 21.4; // TODO: need generator function for blood collected here
-	float nextDonation = 3; //TODO: need generator function for time until next donation event
+	float collected = (float)discrete_empirical(donationF, 11, STREAM_BLOOD_DONATION); // TODO: need generator function for blood collected here
 	/*
 	1) Update the stock levels of the items of various blood groups based
 	on daily donation quantity,% failed tests ,% componentized and % of
@@ -199,12 +209,13 @@ void bloodDonation()
 	DEBUGPRINTF("Blood from donation: %.4f units. Now storing in inventory based on policies. \n", collected);
 	bloodArrival(collected);
 	/* Schedule next donation event */
-	event_schedule(sim_time + nextDonation, EVENT_BLOOD_DONATION);
-	
+	event_schedule(sim_time + 1.0f, EVENT_BLOOD_DONATION);
+
 }
 
 void bloodExpiration()
 {
+
     /*
 	1) Exhaust the batches of various items scheduled to be expired
 	on the day.
@@ -212,23 +223,25 @@ void bloodExpiration()
 	*/
     int bloodGroup = transfer[BLOODGROUP];
     int item = transfer[ITEM];
-
     int n;
-    //O(N) operation :(
-    //Move all badges in Stocks backwards by 1
-	DEBUGPRINTF("Threw away expired %.4f units of %s of blood group %s\n", Stock[0][item][bloodGroup], bloodItemTypes[item], bloodGroupTypes[bloodGroup]);
-    waste[item][bloodGroup] += Stock[0][item][bloodGroup];
-    for (n = 1; n < N[item][bloodGroup]-2; n++)
-    {
-        Stock[n-1][item][bloodGroup] = Stock[n][item][bloodGroup];
 
-    }
+
+    float expiredStockBatch = Stock[oldestBadge[item][bloodGroup]][item][bloodGroup];
+	if (expiredStockBatch > 0.0f)
+        DEBUGPRINTF("Threw away expired %.4f units of %s of blood group %s\n", expiredStockBatch, bloodItemTypes[item], bloodGroupTypes[bloodGroup]);
+    waste[item][bloodGroup] += expiredStockBatch;
+    oldestBadge[item][bloodGroup] ++; //new oldest badge
     N[item][bloodGroup] --; // Decrement total number of badges for item i and bloodgroup g
+    if (oldestBadge[item][bloodGroup] + N[item][bloodGroup] >= MAXNBATCH)
+    {
+        relocateBadges(item, bloodGroup);
+    }
+
 }
 
 void bloodDemand()
 {
-	int i, g; 
+	int i, g;
 	/*
 	1) Generate the daily demand for the items of various blood groups.
 	//TODO: implement generators for daily demand of items i of blood groups g.
@@ -249,7 +262,7 @@ void bloodDemand()
 	float empPlatelets[25] = { 0.29787234,0.329787234,0.361702128,0.393617021,0.510638298,0.521276596,0.531914894,
 		0.563829787,0.595744681,0.638297872,0.691489362,0.712765957,0.755319149,0.776595745,0.787234043,0.808510638,
 		0.872340426,0.904255319,0.914893617,0.957446809,0.968085106,0.978723404,0.989361702,1 };
-	
+
 	//byrja að fylla inn demand í result
 	for (i = 0; i < 8; i++){
 			result[i] = negativebinomrnd(sizevigur[i], muvigur[i], STREAM_BLOOD_DEMAND); //demand sem er nbinom dreift
@@ -264,10 +277,11 @@ void bloodDemand()
 
 	//fylli discrete platelets
 	float p = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND);
-	result[12] = p * 0.2119;
-	result[13] = p * 0.2924;
-	result[14] = p * 0.3709;
-	result[15] = p * 0.0644;
+
+    for (i = 0; i < MAXBLOODGROUP; ++i)
+    {
+        result[i+12] = Perc[i]*p;
+    }
 
 	int teljari = 0;
 
@@ -275,8 +289,8 @@ void bloodDemand()
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
-			
-			bloodDemand[i][g] = result[teljari]; 
+
+			bloodDemand[i][g] = result[teljari];
 			demandSum += bloodDemand[i][g];
 			teljari++;
 		}
@@ -290,11 +304,11 @@ void bloodDemand()
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
-			int n = 0;
+			int n = oldestBadge[i][g];
 			//search through badges n=0,1,2,...,MAXNBATCH.
 			//if a batch is empty, try next batch
 			//if a batch has blood, use blood. If demand is fulfilled stop. Else try next badge while there is demand.
-			while (bloodDemand[i][g] > 0.0f && n < N[i][g])
+			while (bloodDemand[i][g] > 0.0f && n < oldestBadge[i][g]+N[i][g])
 			{
 				if (Stock[n][i][g] == 0.0f) ++n; //badge n is empty - check next badge
 				else if (Stock[n][i][g] > bloodDemand[i][g]) //enough of blood in badge n to fulfill demand
@@ -325,14 +339,37 @@ void bloodDemand()
 			shortageSum += bloodDemand[i][g];
 		}
 	}
-	
+
 	DEBUGPRINTF("Daily demand: total %.2f units. Failed to fulfill %d%% of demands\n", demandSum, (int)(100*shortageSum/demandSum));
 	//Schedule demand on the next day
 	event_schedule(sim_time + 1.0f, EVENT_BLOOD_DEMAND); //daily
 }
 
+float bloodTotalQuantity(int item, int bloodGroup)
+{
+    float bloodQuantity = 0.0f;
+    int n;
+    for (n = oldestBadge[item][bloodGroup]; n < N[item][bloodGroup]; n++)
+    {
+        bloodQuantity += Stock[n][item][bloodGroup];
+    }
+    return bloodQuantity;
+}
+
+void relocateBadges(int item, int bloodGroup)
+{
+    int n;
+    for(n = 0; n < N[item][bloodGroup]; ++n)
+    {
+
+        Stock[n][item][bloodGroup] = Stock[oldestBadge[item][bloodGroup]+n][item][bloodGroup];
+    }
+    oldestBadge[item][bloodGroup] = 0;
+}
+
 void report()
 {
+
 	fprintf(outfile, "\n");
 	fprintf(outfile, "End of blood bank simulation.\n");
 	int wholeBloodType = 0;
@@ -340,20 +377,21 @@ void report()
 	float totalUnits[MAXITEM][MAXBLOODGROUP];
 	memset(totalUnits, 0.0f, sizeof(totalUnits)); //initialize with 0.0f
 	fprintf(outfile, "\n");
-	fprintf(outfile, "State of inventory at the end of simulation. \n");
+	fprintf(outfile, "Current state of blood inventory\n");
 	for(i = 0; i < MAXITEM; i++)
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
 			int n = N[i][g];
 			int j;
-			for (j = 0; j < n - 1; j++)
+			for (j = oldestBadge[i][g]; j < n - 1; j++)
 			{
 				totalUnits[i][g] += Stock[j][i][g];
 			}
-			fprintf(outfile, "Total %.4f units of %s of blood group %s.\n", totalUnits[i][g], bloodItemTypes[i], bloodGroupTypes[g]);
+
+			fprintf(outfile, "Total %.4f units of %s of blood group %s.\n", bloodTotalQuantity(i,g), bloodItemTypes[i], bloodGroupTypes[g]);
 		}
-	} 
+	}
     fprintf(outfile, "\n");
 	fprintf(outfile, "Total wasted blood across the simulation\n");
 	for (i = 0; i < MAXITEM; i++)

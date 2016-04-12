@@ -66,3 +66,9 @@ int negativebinomrnd(float size, float mu, int stream) {
 	int Z = poissonrnd(X*(1 - p) / p, stream);
 	return(Z);
 }
+
+int geoRandom( double probability, int stream){
+	double u = lcgrand(stream);
+	float geo = ceil(abs(log(u)/log(1-probability)-1));
+	return geo;
+}
