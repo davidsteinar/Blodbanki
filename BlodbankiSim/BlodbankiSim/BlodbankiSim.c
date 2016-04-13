@@ -392,25 +392,31 @@ void report()
 			fprintf(outfile, "Total %.4f units of %s of blood group %s.\n", bloodTotalQuantity(i,g), bloodItemTypes[i], bloodGroupTypes[g]);
 		}
 	}
+
     fprintf(outfile, "\n");
 	fprintf(outfile, "Total wasted blood across the simulation\n");
+	float wasteSum = 0;
 	for (i = 0; i < MAXITEM; i++)
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
+		    wasteSum += waste[i][g];
 			fprintf(outfile, "Wasted %.4f units of %s of group %s.\n", waste[i][g], bloodItemTypes[i], bloodGroupTypes[g]);
 		}
 	}
-
+    fprintf(outfile, "Total sum of wastage is %.3f\n", wasteSum);
 	fprintf(outfile, "\n");
+	float shortageSum = 0;
 	fprintf(outfile, "Total shortage of blood across the simulation\n");
 	for (i = 0; i < MAXITEM; i++)
 	{
 		for (g = 0; g < MAXBLOODGROUP; g++)
 		{
+		    shortageSum += shortage[i][g];
 			fprintf(outfile, "Shortage of %.4f units of %s of group %s.\n", shortage[i][g], bloodItemTypes[i], bloodGroupTypes[g]);
 		}
 	}
+    fprintf(outfile, "Total sum of shortage is %.3f\n", shortageSum);
 	//report information to outfile
 	//fprintf(outfile, "..."),
 	printf("Results have been written into \"bloodbank.out\".\n");
