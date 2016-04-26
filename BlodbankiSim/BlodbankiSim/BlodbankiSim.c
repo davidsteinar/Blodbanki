@@ -21,7 +21,16 @@ float expireTimes[MAXITEM];//lifetime for { wholeblood, plasma, plateletes, RBC 
 float Perc[MAXBLOODGROUP]; /* A+ B+ O+ AB+ and 6.04% are of negative type */
 char *bloodGroupTypes[MAXBLOODGROUP] = { "A+", "B+", "O+", "AB+" };
 char *bloodItemTypes[MAXITEM] = { "WB", "RBC", "platelets", "plasma" };
+int camp_seed;
+int donation_seed;
+int demand_seed;
 FILE  *infile, *outfile;
+
+int main()
+{
+	simulate();
+	return 0;
+}
 
 void simulate()
 {
@@ -58,6 +67,10 @@ void readInput()
 {
 	int g = 0;
 	// Assign input from infile to blodbanki variables
+	fscanf(infile, "%d", &camp_seed);
+	fscanf(infile, "%d", &donation_seed);
+	fscanf(infile, "%d", &demand_seed);
+
 	fscanf(infile, "%f", &max_sim_time);
 	fscanf(infile, "%f", &perc_fail);
 	fscanf(infile, "%f", &componentizePolicy);
@@ -188,18 +201,18 @@ void bloodCamp()
 	However, see bloodbank.R script for analysis of this data, we find that we could us the negative binomial distribution */
 	float size = 2.7425933;
 	float mu = 83.5663430;  /* these are the parameters found in the R script for the negative binomial distribution */
-	float collected = (float) negativebinomrnd(size, mu, STREAM_BLOOD_ARRIVAL);
+	float collected = (float) negativebinomrnd(size, mu, camp_seed);
 	DEBUGPRINTF("Blood from camp: %.4f units. Now storing in inventory based on policies. \n", collected);
 	bloodArrival(collected);
 	/* Schedule next camp 3) */
-	event_schedule(sim_time + (float)discrete_empirical(Fcamp, 17, STREAM_BLOOD_ARRIVAL), EVENT_BLOOD_ARRIVAL);
+	event_schedule(sim_time + (float)discrete_empirical(Fcamp, 17, camp_seed), EVENT_BLOOD_ARRIVAL);
 }
 
 void bloodDonation()
 {
     float donationF[11] = {0.459770115, 0.67816092, 0.770114943, 0.862068966, 0.873563218, 0.908045977, 0.965517241, 0.965517241, 0.965517241, 0.977011494, 1.0};
 	//placeholders
-	float collected = (float)discrete_empirical(donationF, 11, STREAM_BLOOD_DONATION); // TODO: need generator function for blood collected here
+	float collected = (float)discrete_empirical(donationF, 11, donation_seed); // TODO: need generator function for blood collected here
 	/*
 	1) Update the stock levels of the items of various blood groups based
 	on daily donation quantity,% failed tests ,% componentized and % of
@@ -265,18 +278,18 @@ void bloodDemand()
 
 	//byrja að fylla inn demand í result
 	for (i = 0; i < 8; i++){
-			result[i] = negativebinomrnd(sizevigur[i], muvigur[i], STREAM_BLOOD_DEMAND); //demand sem er nbinom dreift
+			result[i] = negativebinomrnd(sizevigur[i], muvigur[i], demand_seed); //demand sem er nbinom dreift
 		}
 
 	//fylli discrete ffp
-	float FFPo = discrete_empirical(empFFPo, 7, STREAM_BLOOD_DEMAND); result[8] = FFPo; //demand sem er empirical dreift
-	float FFPb = discrete_empirical(empFFPb, 8, STREAM_BLOOD_DEMAND); result[9] = FFPb;
-	float FFPa = discrete_empirical(empFFPa, 6, STREAM_BLOOD_DEMAND); result[10] = FFPa;
-	float FFPab = discrete_empirical(empFFPab, 3, STREAM_BLOOD_DEMAND); result[11] = FFPab;
+	float FFPo = discrete_empirical(empFFPo, 7, demand_seed); result[8] = FFPo; //demand sem er empirical dreift
+	float FFPb = discrete_empirical(empFFPb, 8, demand_seed); result[9] = FFPb;
+	float FFPa = discrete_empirical(empFFPa, 6, demand_seed); result[10] = FFPa;
+	float FFPab = discrete_empirical(empFFPab, 3, demand_seed); result[11] = FFPab;
 
 
 	//fylli discrete platelets
-	float p = discrete_empirical(empPlatelets, 25, STREAM_BLOOD_DEMAND);
+	float p = discrete_empirical(empPlatelets, 25, demand_seed);
 
     for (i = 0; i < MAXBLOODGROUP; ++i)
     {

@@ -1,6 +1,45 @@
-365
-0.02
-0.35
-0 0.0
-0.2119	 0.2924 	0.3709	 0.0644
-30.0 	 30.0 		5.0 	365.0
+
+
+bloodbank.in example
+
+365 (days)
+0.02 (% failed samples)
+0.35 (% componentize policy)
+1 20.0 (collection policy type, collection policy level)
+0.2119	 0.2924 	0.3709	 0.0644 (distribution % blood groups)
+30.0 	 30.0 		5.0 	365.0 (lifetimes)
+
+bloodbank.out example
+Input data for the simulation.
+
+Maximum simulation time: 100 days.
+Percentage of failed blood collections 2%.
+Componentization policy: 35%
+Collection policy type = 0
+Collection policy level = 0.0
+Percentage composition of blood group
+Perc[A+] = 0.212 
+Perc[B+] = 0.292 
+Perc[O+] = 0.371 
+Perc[AB+] = 0.064 
+
+Lifetime for items
+expiry[WB] = 30.0 
+expiry[RBC] = 30.0 
+expiry[platelets] = 5.0 
+expiry[plasma] = 365.0 
+
+
+...prints input parameters
+
+End of blood bank simulation.
+
+Current state of blood inventory
+...prints for blood items i and blood groups g
+
+Total wasted blood across the simulation
+...prints for blood items i and blood groups g
+
+Total shortage of blood across the simulation
+...prints for blood items i and blood groups g
+

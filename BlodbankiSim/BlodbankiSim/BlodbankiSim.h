@@ -11,10 +11,6 @@
 #define EVENT_BLOOD_EXPIRATION		4	/* Event type for blood expiration */
 #define EVENT_END_SIMULATION    5  /* Event type simulation end */
 
-#define STREAM_BLOOD_ARRIVAL   1  /* Random-number stream for interarrivals of blood. */
-#define STREAM_BLOOD_DEMAND	2  /*  Random-number stream for demands of blood. */
-#define STREAM_BLOOD_DONATION 3
-
 #define MAXNBATCH 1000
 #define MAXITEM  4
 #define MAXBLOODGROUP 4 /* only the postive blood groups are considered for the simlation since negative ones are rare */
@@ -50,6 +46,9 @@ extern float perc_fail;
 extern float Perc[MAXBLOODGROUP]; /* A+ B+ O+ AB+ and 6.04% are of negative type */
 extern char *bloodGroupTypes[MAXBLOODGROUP]; // index to blood types char*
 extern char *bloodItemTypes[MAXITEM];
+extern int camp_seed;
+extern int donation_seed;
+extern int demand_seed;
 extern FILE  *infile, *outfile;
 
 /* Bloodbank simulation related functions declared */

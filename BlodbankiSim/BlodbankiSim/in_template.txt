@@ -1,3 +1,6 @@
+camp_seed
+donation_seed
+demand_seed
 max_sim_time
 perc_fail
 componentizePolicy

@@ -1,4 +1,4 @@
-// Distributions from Tómas
+    // Distributions from Tómas
 
 float discrete_empirical(float *F, int n, int stream);
 int poissonrnd(float lambda, int stream);
